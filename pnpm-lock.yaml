@@ -34,19 +34,10 @@ importers:
   packages/srm-aliyun-fc2:
     specifiers:
       '@alicloud/fc2': ^2.6.3
+      '@serverless-cd/srm-aliyun-common': workspace:^1.0.0
     dependencies:
       '@alicloud/fc2': 2.6.3
-
-  packages/srm-aliyun-nas:
-    specifiers:
-      '@serverless-cd/srm-aliyun-pop-core': workspace:^1.0.0
-      '@types/lodash': ^4.14.191
-      lodash: ^4.17.21
-    dependencies:
-      lodash: 4.17.21
-    devDependencies:
-      '@serverless-cd/srm-aliyun-pop-core': link:../srm-aliyun-pop-core
-      '@types/lodash': 4.14.191
+      '@serverless-cd/srm-aliyun-common': link:../srm-aliyun-common
 
   packages/srm-aliyun-pop-core:
     specifiers:
@@ -60,9 +51,9 @@ importers:
     dependencies:
       '@alicloud/fc2': 2.6.3
       '@alicloud/pop-core': 1.7.12
+      '@serverless-cd/srm-aliyun-common': link:../srm-aliyun-common
       lodash: 4.17.21
     devDependencies:
-      '@serverless-cd/srm-aliyun-common': link:../srm-aliyun-common
       '@types/lodash': 4.14.191
       '@types/node': 18.11.18
       ts-node: 10.9.1_@types+node@18.11.18

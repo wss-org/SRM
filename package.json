@@ -11,6 +11,7 @@
     "build": "pnpm run -r build",
     "test": "jest --testTimeout 10000",
     "test:pop": "jest --testTimeout 10000 packages/srm-aliyun-pop-core/**/index.test.ts --watchAll",
+    "test:fc": "jest --testTimeout 10000 packages/srm-aliyun-fc2 --watchAll",
     "lint": "eslint --ext js,ts,tsx ."
   },
   "devDependencies": {

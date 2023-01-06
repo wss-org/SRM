@@ -8,7 +8,11 @@
     "test:watch": "jest --watchAll"
   },
   "dependencies": {
-    "@alicloud/fc2": "^2.6.3"
+    "@alicloud/fc2": "^2.6.3",
+    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "peerDependencies": {
+    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0"
+  }
 }
