@@ -9,13 +9,20 @@
     "docs": "doctoc --title '**Table of content**' README.md",
     "clean": "pnpm run -r clean",
     "build": "pnpm run -r build",
-    "test": "pnpm run -r test",
+    "test": "jest --testTimeout 10000",
+    "test:pop": "jest --testTimeout 10000 packages/srm-aliyun-pop-core --watchAll",
     "lint": "eslint --ext js,ts,tsx ."
   },
   "devDependencies": {
     "@nighttrax/eslint-config-tsx": "~11.0.0",
     "doctoc": "~2.2.0",
     "eslint": "~8.30.0",
+    "dotenv": "^16.0.3",
+    "@types/jest": "~29.2.5",
+    "@types/node": "~18.11.0",
+    "jest": "~29.3.0",
+    "ts-jest": "~29.0.0",
+    "ts-node": "~10.9.0",
     "eslint-plugin-import": "~2.26.0",
     "typescript": "~4.9.0"
   }

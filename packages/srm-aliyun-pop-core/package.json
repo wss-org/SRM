@@ -1,0 +1,27 @@
+{
+  "name": "@serverless-cd/srm-aliyun-pop-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@alicloud/fc2": "^2.6.3",
+    "@alicloud/pop-core": "^1.7.12",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0",
+    "@types/lodash": "^4.14.191",
+    "@types/node": "~18.11.0",
+    "ts-node": "~10.9.0"
+  },
+  "peerDependencies": {
+    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0"
+  }
+}
