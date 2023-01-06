@@ -58,3 +58,8 @@ export interface ICreateVSwitch {
 
 export type ICreateVSwitchResponse = string;
 
+
+export interface IDescribeVSwitchAttributes {
+  region: string;
+  vswitchId: string;
+}

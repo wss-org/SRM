@@ -3,7 +3,7 @@ import { tracker } from '@serverless-cd/srm-aliyun-common';
 import _ from 'lodash';
 import { getFcZoneId } from './fc';
 import { getNasZones, IGetInitNasConfigAsFcOptions, IVpcConfig } from './nas';
-import { initVpcConfig, IGetInitVpcConfigAsFcOptions, IGetInitVpcConfigAsFcResponse } from './vpc';
+import Vpc20160428, { IGetInitVpcConfigAsFcOptions, IGetInitVpcConfigAsFcResponse } from './vpc-2016-04-28';
 
 const { ROAClient: ROA } = require('@alicloud/pop-core');
 
@@ -29,7 +29,8 @@ export default class PopClient extends Pop {
     }
     const fcZoneIds = await getFcZoneId(this.config, region);
 
-    return await initVpcConfig(this.config, { ...params, fcZoneIds });
+    const vpcClient = new Vpc20160428(this.config);
+    return await vpcClient.initVpcConfig({ ...params, fcZoneIds });
   }
 
   async getInitNasConfigAsFc(params: IGetInitNasConfigAsFcOptions) {
@@ -38,25 +39,26 @@ export default class PopClient extends Pop {
       throw new Error(`Invalid rule: ${rule}`);
     }
 
-    let vpcId = _.get(vpcConfig, 'vpcId', '');
-    let vswitchIds = _.get(vpcConfig, 'vswitchIds', []);
-
+    let systemIdType = '';
+    let nasVswitch = '';
     const vpcIsEmpty = _.isEmpty(vpcConfig?.vpcId) && _.isEmpty(vpcConfig?.vswitchIds);
+    // 如果 vpc 为空，则初始化 vpc 配置
     if (vpcIsEmpty) {
-      const nasZoneIds = await getNasZones(region, undefined, this.config);
-      const initVpcConfig = await this.getInitVpcConfigAsFc({ region, rule, nasZoneIds });
-      _.set(vpcConfig, 'vpcId', initVpcConfig.vpcId);
-      _.set(vpcConfig, 'vswitchIds', initVpcConfig.vswitchIds);
-      _.set(vpcConfig, 'securityGroupId', initVpcConfig.securityGroupId);
-      vpcId = initVpcConfig.vpcId;
-      vswitchIds = [initVpcConfig.nasVswitch || ''];
-    } else if (_.isEmpty(vpcId) && !_.isEmpty(vswitchIds)) {
-      throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vpcId configuration.`);
-    } else if (!_.isEmpty(vpcId) && _.isEmpty(vswitchIds)) {
-      throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vswitchIds configuration.`);
+      const { zoneIds, type } = await getNasZones(region, undefined, this.config);
+      const initVpcConfig = await this.getInitVpcConfigAsFc({ region, rule, nasZoneIds: zoneIds });
+      nasVswitch = initVpcConfig.nasVswitch as string;
+      systemIdType = type;
+      _.unset(initVpcConfig, 'nasVswitch');
+      _.merge(vpcConfig, initVpcConfig);
+    } else {
+      const vpcId = _.get(vpcConfig, 'vpcId', '');
+      const vswitchIds = _.get(vpcConfig, 'vswitchId', []);
+      if (_.isEmpty(vpcId) && !_.isEmpty(vswitchIds)) {
+        throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vpcId configuration.`);
+      } else if (!_.isEmpty(vpcId) && _.isEmpty(vswitchIds)) {
+        throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vswitchIds configuration.`);
+      }
     }
-
-
   }
 }
 
