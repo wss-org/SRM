@@ -5,9 +5,6 @@ import _ from 'lodash';
 import { getAccountId } from '../utils';
 
 const getFcClient = async (config: Config, region: string) => {
-  FC.prototype.getAccountSettings = function (options = {}, headers = {}) {
-    return this.get('/account-settings', options, headers);
-  };
   let accountId = _.get(config, 'accountId', '');
   if (!accountId) {
     accountId = await getAccountId(config);

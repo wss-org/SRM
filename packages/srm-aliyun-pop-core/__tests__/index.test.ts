@@ -22,7 +22,7 @@ test('ROAClient', async () => {
   })()).resolves.toBeUndefined();
 });
 
-test.only('getInitNasConfigAsFc', async () => {
+test('getInitNasConfigAsFc not imported vpc configuration', async () => {
   const region = 'cn-chengdu';
   const config = {
     accessKeyId: process.env.ACCESS_KEY_ID || '',
@@ -32,8 +32,32 @@ test.only('getInitNasConfigAsFc', async () => {
   }
   const codeupClient = new Pop(config);
   expect(codeupClient instanceof PopClient).toBeTruthy();
-  await codeupClient.getInitNasConfigAsFc({
+  const res = await codeupClient.getInitNasConfigAsFc({
     region,
-    rule: 'test-srm-client'
+    rule: 'test-srm-client3'
   });
-})
+  console.log('res: ', res);
+  expect(true).toBeTruthy();
+});
+
+test('getInitNasConfigAsFc imported vpc configuration', async () => {
+  const region = 'cn-chengdu';
+  const config = {
+    accessKeyId: process.env.ACCESS_KEY_ID || '',
+    accessKeySecret: process.env.ACCESS_KEY_SECRET || '',
+    endpoint: `http://nas.${region}.aliyuncs.com`,
+    apiVersion: '2017-06-26',
+  }
+  const codeupClient = new Pop(config);
+  expect(codeupClient instanceof PopClient).toBeTruthy();
+  const res = await codeupClient.getInitNasConfigAsFc({
+    region,
+    rule: 'test-srm-client',
+    vpcConfig: {
+      vpcId: 'vpc-2vcpxnhi0y2mvr236yoha',
+      vswitchIds: ['vsw-2vci27eoli6io5lcyjtj3'],
+    }
+  });
+  console.log('res: ', res);
+  expect(true).toBeTruthy();
+});

@@ -13,13 +13,6 @@ export const getPopClient = ({
   opts,
 });
 
-export const requestOption = {
-  method: 'POST',
-};
-
-export const sleep = (timer: number = 1000) => new Promise((resolve) => setTimeout(resolve, timer));
-
-
 export const getAccountId = async (config: Config): Promise<string> => {
   const client = getPopClient({
     ...config,
@@ -35,3 +28,9 @@ export const getAccountId = async (config: Config): Promise<string> => {
 
   return _.get(result, 'AccountId', '');
 };
+
+export const requestOption = {
+  method: 'POST',
+};
+
+export const sleep = (timer: number = 1000) => new Promise((resolve) => setTimeout(resolve, timer));

@@ -18,3 +18,19 @@ export interface IGetInitNasConfigAsFcResponse {
   fileSystemId: string;
   mountPoint: string;
 }
+
+export interface IGetNasZonesAsVSwitchesResponse {
+  type: 'Performance' | 'Capacity';
+  vswitchId: string;
+  zoneId: string;
+}
+
+export interface IMakeNas {
+  nasConfig?: any[];
+  storageType: string;
+  zoneId: string;
+  vswitchId: string;
+  description: string;
+  vpcId: string;
+}
+

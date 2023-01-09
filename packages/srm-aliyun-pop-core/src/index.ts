@@ -2,7 +2,7 @@ import Pop, { Config as IConfig } from '@alicloud/pop-core';
 import { tracker } from '@serverless-cd/srm-aliyun-common';
 import _ from 'lodash';
 import { getFcZoneId } from './fc';
-import { getNasZones, IGetInitNasConfigAsFcOptions, IVpcConfig } from './nas';
+import Nas20170626, { IGetInitNasConfigAsFcOptions, IVpcConfig } from './nas-2017-06-26';
 import Vpc20160428, { IGetInitVpcConfigAsFcOptions, IGetInitVpcConfigAsFcResponse } from './vpc-2016-04-28';
 
 const { ROAClient: ROA } = require('@alicloud/pop-core');
@@ -11,10 +11,12 @@ export type Config = IConfig;
 
 export default class PopClient extends Pop {
   private config: Config;
+  logger: any
 
-  constructor(config: Config) {
+  constructor(config: Config, logger: any = console) {
     super(config);
     this.config = config;
+    this.logger = logger;
   }
 
   @tracker()
@@ -29,7 +31,7 @@ export default class PopClient extends Pop {
     }
     const fcZoneIds = await getFcZoneId(this.config, region);
 
-    const vpcClient = new Vpc20160428(this.config);
+    const vpcClient = new Vpc20160428(this.config, this.logger);
     return await vpcClient.initVpcConfig({ ...params, fcZoneIds });
   }
 
@@ -39,25 +41,71 @@ export default class PopClient extends Pop {
       throw new Error(`Invalid rule: ${rule}`);
     }
 
-    let systemIdType = '';
+    const nasClient = new Nas20170626(region, this.config, this.logger);
+
+    let storageType = '';
     let nasVswitch = '';
-    const vpcIsEmpty = _.isEmpty(vpcConfig?.vpcId) && _.isEmpty(vpcConfig?.vswitchIds);
+    let nasZone = '';
+    let vpcId = _.get(vpcConfig, 'vpcId', '');
+    const vpcIsEmpty = _.isEmpty(vpcId) && _.isEmpty(vpcConfig?.vswitchIds);
     // 如果 vpc 为空，则初始化 vpc 配置
     if (vpcIsEmpty) {
-      const { zoneIds, type } = await getNasZones(region, undefined, this.config);
+      const { zoneIds, type } = await nasClient.getNasZones();
       const initVpcConfig = await this.getInitVpcConfigAsFc({ region, rule, nasZoneIds: zoneIds });
       nasVswitch = initVpcConfig.nasVswitch as string;
-      systemIdType = type;
+      nasZone = initVpcConfig.nasZone as string;
+      storageType = type;
+      vpcId = initVpcConfig.vpcId;
       _.unset(initVpcConfig, 'nasVswitch');
+      _.unset(initVpcConfig, 'nasZone');
       _.merge(vpcConfig, initVpcConfig);
     } else {
-      const vpcId = _.get(vpcConfig, 'vpcId', '');
-      const vswitchIds = _.get(vpcConfig, 'vswitchId', []);
+      const vswitchIds = _.get(vpcConfig, 'vswitchIds', []);
       if (_.isEmpty(vpcId) && !_.isEmpty(vswitchIds)) {
         throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vpcId configuration.`);
       } else if (!_.isEmpty(vpcId) && _.isEmpty(vswitchIds)) {
         throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vswitchIds configuration.`);
       }
+    }
+
+    // 如果存在复用则直接返回
+    const nasFindConfig = await nasClient.findNas(vpcId, rule);
+    if (_.isPlainObject(nasFindConfig)) {
+      return {
+        ...nasFindConfig,
+        ...vpcConfig,
+      }
+    }
+
+    // 如果不存在则创建
+    //   传入 vpc 时需要验证交换机的地区
+    if (!vpcIsEmpty) {
+      const vswitchIds = _.get(vpcConfig, 'vswitchIds', []);
+      const vpcClient = new Vpc20160428(this.config, this.logger);
+      const { list: vswDescribes } = await vpcClient.describeVSwitches({ region, vpcId });
+      this.logger.debug(`vswDescribes for ${JSON.stringify(vswDescribes)}`);
+      const vswitches = _.filter(vswDescribes, ({ VSwitchId }: any) => _.includes(vswitchIds, VSwitchId)).map(item => ({ vswitchId: item.VSwitchId, zoneId: item.ZoneId }));
+      this.logger.debug(`vswitches for ${JSON.stringify(vswitches)}`);
+      if (_.isEmpty(vswitches)) {
+        throw new Error(`VswitchIds(${JSON.stringify(vswitchIds)}) cannot be queried in the vpcId(${vpcId}).`);
+      }
+      const zoneConfig = await nasClient.getNasZonesAsVSwitches(vswitches);
+      nasVswitch = zoneConfig.vswitchId;
+      storageType = zoneConfig.type;
+      nasZone = zoneConfig.zoneId;
+    }
+
+    const nasConfig = await nasClient.makeNas({
+      vpcId,
+      storageType,
+      nasConfig: (nasFindConfig as any[]),
+      zoneId: nasZone,
+      vswitchId: nasVswitch,
+      description: rule,
+    });
+    return {
+      ...nasConfig,
+      ...vpcConfig,
     }
   }
 }

@@ -9,6 +9,7 @@ export interface IGetInitVpcConfigAsFcResponse {
   vswitchIds: string[];
   securityGroupId?: string;
   nasVswitch?: string;
+  nasZone?: string;
 }
 
 export interface IInitVpcConfig extends IGetInitVpcConfigAsFcOptions {
