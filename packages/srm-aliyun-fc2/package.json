@@ -1,18 +1,20 @@
 {
   "name": "@serverless-cd/srm-aliyun-fc2",
   "description": "Example of using jest with a TS monorepo",
-  "private": true,
-  "version": "1.0.0",
+  "version": "0.0.2",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watchAll"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@alicloud/fc2": "^2.6.3",
-    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0"
+    "@serverless-cd/srm-aliyun-common": "workspace:^0.0.2"
   },
   "devDependencies": {},
   "peerDependencies": {
-    "@serverless-cd/srm-aliyun-common": "workspace:^1.0.0"
+    "@serverless-cd/srm-aliyun-common": "workspace:^0.0.2"
   }
 }

@@ -1,5 +1,6 @@
 {
   "name": "ts-monorepo",
+  "version": "0.0.2",
   "description": "Template for setting up a TypeScript monorepo",
   "private": true,
   "workspaces": [
@@ -10,21 +11,21 @@
     "clean": "pnpm run -r clean",
     "build": "pnpm run -r build",
     "test": "jest --testTimeout 10000",
-    "test:pop": "jest --testTimeout 10000 packages/srm-aliyun-pop-core/**/index.test.ts --watchAll",
+    "test:pop": "jest --testTimeout 120000 packages/srm-aliyun-pop-core --watchAll",
     "test:fc": "jest --testTimeout 10000 packages/srm-aliyun-fc2 --watchAll",
     "lint": "eslint --ext js,ts,tsx ."
   },
   "devDependencies": {
     "@nighttrax/eslint-config-tsx": "~11.0.0",
-    "doctoc": "~2.2.0",
-    "eslint": "~8.30.0",
-    "dotenv": "^16.0.3",
     "@types/jest": "~29.2.5",
-    "@types/node": "~18.11.0",
-    "jest": "~29.3.0",
-    "ts-jest": "~29.0.0",
-    "ts-node": "~10.9.0",
+    "@types/node": "~18.11.18",
+    "doctoc": "~2.2.1",
+    "dotenv": "^16.0.3",
+    "eslint": "~8.30.0",
     "eslint-plugin-import": "~2.26.0",
-    "typescript": "~4.9.0"
+    "jest": "~29.3.1",
+    "ts-jest": "~29.0.3",
+    "ts-node": "~10.9.1",
+    "typescript": "~4.9.4"
   }
 }
