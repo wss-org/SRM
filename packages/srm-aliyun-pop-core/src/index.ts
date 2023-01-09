@@ -2,7 +2,7 @@ import Pop, { Config as IConfig } from '@alicloud/pop-core';
 import { tracker } from '@serverless-cd/srm-aliyun-common';
 import _ from 'lodash';
 import { getFcZoneId } from './fc';
-import Nas20170626, { IGetInitNasConfigAsFcOptions, IVpcConfig } from './nas-2017-06-26';
+import Nas20170626, { IGetInitNasConfigAsFcOptions, IGetInitNasConfigAsFcResponse, IVpcConfig } from './nas-2017-06-26';
 import Vpc20160428, { IGetInitVpcConfigAsFcOptions, IGetInitVpcConfigAsFcResponse } from './vpc-2016-04-28';
 
 const { ROAClient: ROA } = require('@alicloud/pop-core');
@@ -35,7 +35,7 @@ export default class PopClient extends Pop {
     return await vpcClient.initVpcConfig({ ...params, fcZoneIds });
   }
 
-  async getInitNasConfigAsFc(params: IGetInitNasConfigAsFcOptions) {
+  async getInitNasConfigAsFc(params: IGetInitNasConfigAsFcOptions): Promise<IGetInitNasConfigAsFcResponse> {
     const { region, rule, vpcConfig = ({} as unknown as IVpcConfig) } = params || {};
     if (_.isEmpty(rule) || !_.isString(rule)) {
       throw new Error(`Invalid rule: ${rule}`);
@@ -74,7 +74,7 @@ export default class PopClient extends Pop {
       return {
         ...nasFindConfig,
         ...vpcConfig,
-      }
+      } as unknown as IGetInitNasConfigAsFcResponse;
     }
 
     // 如果不存在则创建
@@ -106,7 +106,7 @@ export default class PopClient extends Pop {
     return {
       ...nasConfig,
       ...vpcConfig,
-    }
+    } as unknown as IGetInitNasConfigAsFcResponse;
   }
 }
 

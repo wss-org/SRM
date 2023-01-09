@@ -30,9 +30,9 @@ test('getInitNasConfigAsFc not imported vpc configuration', async () => {
     endpoint: `http://nas.${region}.aliyuncs.com`,
     apiVersion: '2017-06-26',
   }
-  const codeupClient = new Pop(config);
-  expect(codeupClient instanceof PopClient).toBeTruthy();
-  const res = await codeupClient.getInitNasConfigAsFc({
+  const client = new Pop(config);
+  expect(client instanceof PopClient).toBeTruthy();
+  const res = await client.getInitNasConfigAsFc({
     region,
     rule: 'test-srm-client3'
   });
