@@ -32,7 +32,7 @@ interface IInitVpcConfig {
 ```
 interface IGetInitVpcConfigAsFcResponse {
   vpcId: string;
-  vswitchIds: string[];
+  vSwitchIds: string[];
   securityGroupId?: string;
   nasVswitch?: string;
 }
@@ -48,7 +48,7 @@ interface IInitVpcConfig {
   rule: string;
   vpcConfig?: {
     vpcId: string;
-    vswitchIds: string[];
+    vSwitchIds?: string[];
   }
 }
 ```
@@ -69,7 +69,7 @@ interface IInitVpcConfig {
 1. 通过 `rule`、`vpcId` 查询是否已经存在挂载点  
    I. 如果存在则直接复用，返回  
    II. 如果不存在  
-    a. 则获取传入的 vswitchIds 的可用区  
+    a. 则获取传入的 vSwitchIds 的可用区  
     b. 对比 NAS 可用区，优先取可创建 Performance（性能型）的交换机，如果不存在可用的可用区，则抛出异常。 根据 `rule`、`vpcId`、`nasVswitch`和可用区的类型[创建挂载点](#创建挂载点)
 
 ##### 创建挂载点

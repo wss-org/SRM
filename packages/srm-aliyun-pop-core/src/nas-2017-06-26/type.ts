@@ -3,20 +3,20 @@ export interface IGetInitNasConfigAsFcOptions {
   rule: string;
   vpcConfig?: {
     vpcId: string;
-    vswitchIds: string[];
+    vSwitchIds: string[];
   };
 }
 
 export interface IVpcConfig {
   vpcId: string;
-  vswitchIds: string[];
+  vSwitchIds: string[];
   securityGroupId?: string;
 }
 
 export interface IGetInitNasConfigAsFcResponse {
   vpcConfig: IVpcConfig;
   fileSystemId: string;
-  mountPoint: string;
+  mountTargetDomain: string;
 }
 
 export interface IGetNasZonesAsVSwitchesResponse {

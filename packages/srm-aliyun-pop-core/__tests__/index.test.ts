@@ -55,7 +55,7 @@ test('getInitNasConfigAsFc imported vpc configuration', async () => {
     rule: 'test-srm-client',
     vpcConfig: {
       vpcId: 'vpc-2vcpxnhi0y2mvr236yoha',
-      vswitchIds: ['vsw-2vci27eoli6io5lcyjtj3'],
+      vSwitchIds: ['vsw-2vci27eoli6io5lcyjtj3'],
     }
   });
   console.log('res: ', res);

@@ -50,19 +50,15 @@ export default class Vpc extends Pop {
       PageSize: pageSize,
     };
     if (vpcName) {
-      _.set(p, 'VpcName', vpcName);
+      _.set(p, "VpcName", vpcName);
     }
     if (vpcId) {
-      _.set(p, 'VpcId', vpcId);
+      _.set(p, "VpcId", vpcId);
     }
     do {
-      _.set(p, 'PageNumber', ++requestPageNumber);
+      _.set(p, "PageNumber", ++requestPageNumber);
       this.logger.debug(`DescribeVpcs params: ${JSON.stringify(p)}`);
-      const rs: any = await this.request(
-        "DescribeVpcs",
-        p,
-        requestOption
-      );
+      const rs: any = await this.request("DescribeVpcs", p, requestOption);
 
       totalCount = rs.TotalCount;
       if (totalCount === 0) {
@@ -125,30 +121,30 @@ export default class Vpc extends Pop {
     const pageSize = 50; // max value is 50.
     let requestPageNumber = 0;
     let total = 0;
-    let vswitches: any[] = [];
+    let vSwitches: any[] = [];
     const p = {
       RegionId: region,
       VpcId: vpcId,
       PageSize: pageSize,
     };
     if (vswitchName) {
-      _.set(p, 'VSwitchName', vswitchName);
+      _.set(p, "VSwitchName", vswitchName);
     }
     if (zoneId) {
-      _.set(p, 'ZoneId', zoneId);
+      _.set(p, "ZoneId", zoneId);
     }
     do {
-      _.set(p, 'PageNumber', ++requestPageNumber);
+      _.set(p, "PageNumber", ++requestPageNumber);
       this.logger.debug(`DescribeVSwitches params: ${JSON.stringify(p)}`);
       const rs: any = await this.request("DescribeVSwitches", p, requestOption);
       total = rs.TotalCount;
       if (total === 0) {
-        return { total, list: vswitches };
+        return { total, list: vSwitches };
       }
-      vswitches = _.concat(vswitches, _.get(rs, "VSwitches.VSwitch", []));
+      vSwitches = _.concat(vSwitches, _.get(rs, "VSwitches.VSwitch", []));
     } while (total && requestPageNumber * pageSize < total);
 
-    return { total, list: vswitches };
+    return { total, list: vSwitches };
   }
 
   /**
@@ -214,8 +210,13 @@ export default class Vpc extends Pop {
   ): Promise<IGetInitVpcConfigAsFcResponse> {
     const vpcId = await this.mackVpc(params);
     this.logger.debug(`mack vpc id: ${vpcId}`);
-    const { fcVswitch, nasVswitch, nasZone } = await this.mackVswitch(vpcId, params);
-    this.logger.debug(`mack vswitch res:\n fcVswitch: ${fcVswitch}, nasVswitch: ${nasVswitch}, nasZone: ${nasZone}`);
+    const { fcVswitch, nasVswitch, nasZone } = await this.mackVswitch(
+      vpcId,
+      params
+    );
+    this.logger.debug(
+      `mack vswitch res:\n fcVswitch: ${fcVswitch}, nasVswitch: ${nasVswitch}, nasZone: ${nasZone}`
+    );
 
     const securityGroupId = await this.mackSecurityGroup({
       vpcId,
@@ -224,18 +225,27 @@ export default class Vpc extends Pop {
     });
     this.logger.debug(`mack securityGroup id: ${securityGroupId}`);
 
-    return { vpcId, securityGroupId, vswitchIds: [fcVswitch], nasVswitch, nasZone };
+    return {
+      vpcId,
+      securityGroupId,
+      vSwitchIds: [fcVswitch],
+      nasVswitch,
+      nasZone,
+    };
   }
 
   private async mackVpc(params: { region: string; rule: string }) {
     const { region, rule } = params;
     let vpcId = "";
-    const { total, list: vpcList } = await this.describeVpcs({ region, vpcName: rule });
+    const { total, list: vpcList } = await this.describeVpcs({
+      region,
+      vpcName: rule,
+    });
     this.logger.debug(`describe vpcs total: ${total}`);
     if (total >= 1) {
       vpcId = _.get(vpcList, "[0].VpcId", "");
     } else {
-      this.logger.debug('Need create vpc');
+      this.logger.debug("Need create vpc");
       vpcId = await this.createVpc({ region, vpcName: rule });
     }
     return vpcId;
@@ -245,7 +255,6 @@ export default class Vpc extends Pop {
     vpcId: string,
     params: IInitVpcConfig
   ): Promise<{ fcVswitch: string; nasVswitch: string; nasZone: string }> {
-    let nasZone: string = '';
     const { region, rule, fcZoneIds, nasZoneIds = [] } = params;
     const createParams: ICreateVSwitch = {
       region,
@@ -255,54 +264,59 @@ export default class Vpc extends Pop {
       zoneId: "",
     };
 
-    const { list: vswitches } = await this.describeVSwitches({ region, vpcId });
+    const { list: vSwitches } = await this.describeVSwitches({ region, vpcId });
 
     const zoneIds = _.intersection(fcZoneIds, nasZoneIds);
     // 如果存在交集，则统一处理
     if (!_.isEmpty(zoneIds)) {
-      const findVswitches = _.find(vswitches, (vswitch) =>
-        _.includes(zoneIds, vswitch.ZoneId)
+      const { vswitchId, zoneId } = await this.mackZoneIdsVswitch(
+        zoneIds,
+        vSwitches,
+        createParams
       );
-      let vswitchId: string;
-      if (!_.isEmpty(findVswitches)) {
-        vswitchId = findVswitches.VSwitchId;
-        nasZone = findVswitches.ZoneId;
-      } else {
-        createParams.zoneId = zoneIds[0];
-        nasZone = zoneIds[0];
-        vswitchId = await this.createVSwitch(createParams);
-      }
-      return { fcVswitch: vswitchId, nasVswitch: vswitchId, nasZone };
+      return { fcVswitch: vswitchId, nasVswitch: vswitchId, nasZone: zoneId };
     }
 
     // 如果不存在交集，则各自处理 vsw
-    let fcVswitch = "";
-    const findFcVswitches = _.find(vswitches, (vswitch) =>
-      _.includes(fcZoneIds, vswitch.ZoneId)
+    // 处理Fc的交换机
+    const { vswitchId: fcVswitch } = await this.mackZoneIdsVswitch(
+      fcZoneIds,
+      vSwitches,
+      createParams
     );
-    if (!_.isEmpty(findFcVswitches)) {
-      fcVswitch = findFcVswitches.VSwitchId;
-    } else {
-      createParams.zoneId = fcZoneIds[0];
-      fcVswitch = await this.createVSwitch(createParams);
-    }
-
     // 如果 nasZoneId 不存在，则不需要处理
-    let nasVswitch = "";
-    if (!_.isEmpty(nasZoneIds)) {
-      const findNasVswitches = _.find(vswitches, (vswitch) =>
-        _.includes(nasZoneIds, vswitch.ZoneId)
-      );
-      if (!_.isEmpty(findNasVswitches)) {
-        nasVswitch = findNasVswitches.VSwitchId;
-        nasZone = findNasVswitches.ZoneId;
-      } else {
-        createParams.zoneId = nasZoneIds[0];
-        nasZone = nasZoneIds[0];
-        nasVswitch = await this.createVSwitch(createParams);
-      }
-    }
+    const { vswitchId: nasVswitch, zoneId: nasZone } =
+      await this.mackZoneIdsVswitch(nasZoneIds, vSwitches, createParams);
+
     return { fcVswitch, nasVswitch, nasZone };
+  }
+
+  /**
+   * 根据可用区列表获取可用的交换机ID和交换机可用区
+   * @param zoneIds 可用区列表
+   * @param vSwitches 已存在的交换机列表
+   * @param createParams 创建交换机的参数
+   * @returns
+   */
+  async mackZoneIdsVswitch(
+    zoneIds: string[],
+    vSwitches: any[],
+    createParams: ICreateVSwitch
+  ): Promise<{ vswitchId: string; zoneId: string }> {
+    const findVSwitches = _.find(vSwitches, (vswitch) =>
+      _.includes(zoneIds, vswitch.ZoneId)
+    );
+    let vswitchId: string;
+    let zoneId: string;
+    if (!_.isEmpty(findVSwitches)) {
+      vswitchId = findVSwitches.VSwitchId;
+      zoneId = findVSwitches.ZoneId;
+    } else {
+      createParams.zoneId = zoneIds[0];
+      zoneId = zoneIds[0];
+      vswitchId = await this.createVSwitch(createParams);
+    }
+    return { vswitchId, zoneId };
   }
 
   private async mackSecurityGroup(params: {

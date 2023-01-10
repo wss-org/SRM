@@ -47,7 +47,7 @@ export default class PopClient extends Pop {
     let nasVswitch = '';
     let nasZone = '';
     let vpcId = _.get(vpcConfig, 'vpcId', '');
-    const vpcIsEmpty = _.isEmpty(vpcId) && _.isEmpty(vpcConfig?.vswitchIds);
+    const vpcIsEmpty = _.isEmpty(vpcId) && _.isEmpty(vpcConfig?.vSwitchIds);
     // 如果 vpc 为空，则初始化 vpc 配置
     if (vpcIsEmpty) {
       const { zoneIds, type } = await nasClient.getNasZones();
@@ -60,11 +60,9 @@ export default class PopClient extends Pop {
       _.unset(initVpcConfig, 'nasZone');
       _.merge(vpcConfig, initVpcConfig);
     } else {
-      const vswitchIds = _.get(vpcConfig, 'vswitchIds', []);
-      if (_.isEmpty(vpcId) && !_.isEmpty(vswitchIds)) {
-        throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vpcId configuration.`);
-      } else if (!_.isEmpty(vpcId) && _.isEmpty(vswitchIds)) {
-        throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vswitchIds configuration.`);
+      const vSwitchIds = _.get(vpcConfig, 'vSwitchIds', []);
+      if (!_.isEmpty(vpcId) && _.isEmpty(vSwitchIds)) {
+        throw new Error(`Invalid vpcConfig: ${JSON.stringify(vpcConfig)}. Please specify vSwitchIds configuration.`);
       }
     }
 
@@ -80,16 +78,16 @@ export default class PopClient extends Pop {
     // 如果不存在则创建
     //   传入 vpc 时需要验证交换机的地区
     if (!vpcIsEmpty) {
-      const vswitchIds = _.get(vpcConfig, 'vswitchIds', []);
+      const vSwitchIds = _.get(vpcConfig, 'vSwitchIds', []);
       const vpcClient = new Vpc20160428(this.config, this.logger);
       const { list: vswDescribes } = await vpcClient.describeVSwitches({ region, vpcId });
       this.logger.debug(`vswDescribes for ${JSON.stringify(vswDescribes)}`);
-      const vswitches = _.filter(vswDescribes, ({ VSwitchId }: any) => _.includes(vswitchIds, VSwitchId)).map(item => ({ vswitchId: item.VSwitchId, zoneId: item.ZoneId }));
-      this.logger.debug(`vswitches for ${JSON.stringify(vswitches)}`);
-      if (_.isEmpty(vswitches)) {
-        throw new Error(`VswitchIds(${JSON.stringify(vswitchIds)}) cannot be queried in the vpcId(${vpcId}).`);
+      const vSwitches = _.filter(vswDescribes, ({ VSwitchId }: any) => _.includes(vSwitchIds, VSwitchId)).map(item => ({ vswitchId: item.VSwitchId, zoneId: item.ZoneId }));
+      this.logger.debug(`vSwitches for ${JSON.stringify(vSwitches)}`);
+      if (_.isEmpty(vSwitches)) {
+        throw new Error(`VswitchIds(${JSON.stringify(vSwitchIds)}) cannot be queried in the vpcId(${vpcId}).`);
       }
-      const zoneConfig = await nasClient.getNasZonesAsVSwitches(vswitches);
+      const zoneConfig = await nasClient.getNasZonesAsVSwitches(vSwitches);
       nasVswitch = zoneConfig.vswitchId;
       storageType = zoneConfig.type;
       nasZone = zoneConfig.zoneId;
