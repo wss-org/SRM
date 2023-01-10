@@ -24,7 +24,7 @@ export default class Vpc extends Pop {
   logger: any;
   default_vpc_cidr_block = "10.0.0.0/8";
   default_vsw_cidr_block = "10.20.0.0/24";
-  vsw_cidr_block_index = 3;
+  vsw_cidr_block_index = 2;
 
   constructor(config: Config, logger: any = config) {
     super({
@@ -44,11 +44,13 @@ export default class Vpc extends Pop {
     let vswNetwork = Number(network);
     if (vswNetwork < 24) {
       vswNetwork = 24;
+      this.vsw_cidr_block_index = 2;
     } else {
       vswNetwork += 1;
       if (vswNetwork >= 29) {
         vswNetwork = 29;
       }
+      this.vsw_cidr_block_index = 3;
     }
     this.default_vsw_cidr_block = `${ip}/${vswNetwork}`;
   }
@@ -197,6 +199,7 @@ export default class Vpc extends Pop {
         CidrBlock: cidrBlock,
       };
       try {
+        this.logger.debug(`CreateVSwitch params: ${JSON.stringify(createParams)}`);
         const createRs = await this.request(
           "CreateVSwitch",
           createParams,
@@ -206,13 +209,17 @@ export default class Vpc extends Pop {
       } catch (ex: any) {
         // 如果错误是 ip 冲突，则重拾
         if (ex.code === "InvalidCidrBlock.Overlapped") {
-          const ips = cidrBlock.split(".");
+          const [ip, network] = _.split(cidrBlock, '/');
+          const ips = ip.split(".");
           const i = Number(ips[this.vsw_cidr_block_index]) + (30 + retryTimer);
+
           if (i > 254) {
             throw ex;
           }
           _.set(ips, `[${this.vsw_cidr_block_index}]`, i);
-          cidrBlock = ips.join(".");
+          cidrBlock = `${ips.join(".")}/${network}`;
+        } else {
+          throw ex;
         }
 
         if (retryTimer < 15) {
