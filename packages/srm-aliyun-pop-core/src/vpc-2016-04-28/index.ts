@@ -23,8 +23,8 @@ export default class Vpc extends Pop {
   private config: Config;
   logger: any;
   default_vpc_cidr_block = "10.0.0.0/8";
-  default_vsw_cidr_block = "10.20.0.0/16";
-  vsw_cidr_block_index = 1;
+  default_vsw_cidr_block = "10.20.0.0/24";
+  vsw_cidr_block_index = 3;
 
   constructor(config: Config, logger: any = config) {
     super({
@@ -41,17 +41,14 @@ export default class Vpc extends Pop {
     this.logger.debug(`get default CIDR block: ${cidrBlock}`);
     this.default_vpc_cidr_block = cidrBlock;
     const [ip, network] = _.split(cidrBlock, '/');
-    let vswNetwork = _.add(Number(network), 4);
-    if (vswNetwork <= 16) {
-      vswNetwork = 16;
-      this.vsw_cidr_block_index = 1;
-    } else if (vswNetwork < 24) {
-      this.vsw_cidr_block_index = 2;
+    let vswNetwork = Number(network);
+    if (vswNetwork < 24) {
+      vswNetwork = 24;
     } else {
-      if (vswNetwork < 29) {
+      vswNetwork += 1;
+      if (vswNetwork >= 29) {
         vswNetwork = 29;
       }
-      this.vsw_cidr_block_index = 3;
     }
     this.default_vsw_cidr_block = `${ip}/${vswNetwork}`;
   }
@@ -210,7 +207,11 @@ export default class Vpc extends Pop {
         // 如果错误是 ip 冲突，则重拾
         if (ex.code === "InvalidCidrBlock.Overlapped") {
           const ips = cidrBlock.split(".");
-          _.set(ips, `[this.vsw_cidr_block_index]`, (ips[this.vsw_cidr_block_index] as unknown as number) / 1 + 1);
+          const i = Number(ips[this.vsw_cidr_block_index]) + (30 + retryTimer);
+          if (i > 254) {
+            throw ex;
+          }
+          _.set(ips, `[${this.vsw_cidr_block_index}]`, i);
           cidrBlock = ips.join(".");
         }
 

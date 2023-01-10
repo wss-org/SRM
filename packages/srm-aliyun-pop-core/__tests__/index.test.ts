@@ -40,7 +40,7 @@ test('getInitNasConfigAsFc not imported vpc configuration', async () => {
   expect(true).toBeTruthy();
 });
 
-test.only('getInitNasConfigAsFc imported vpc configuration', async () => {
+test('getInitNasConfigAsFc imported vpc configuration', async () => {
   const region = 'cn-chengdu';
   const config = {
     accessKeyId: process.env.ACCESS_KEY_ID || '',
