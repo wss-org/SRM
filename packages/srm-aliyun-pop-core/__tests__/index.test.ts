@@ -40,7 +40,7 @@ test('getInitNasConfigAsFc not imported vpc configuration', async () => {
   expect(true).toBeTruthy();
 });
 
-test('getInitNasConfigAsFc imported vpc configuration', async () => {
+test.only('getInitNasConfigAsFc imported vpc configuration', async () => {
   const region = 'cn-chengdu';
   const config = {
     accessKeyId: process.env.ACCESS_KEY_ID || '',
@@ -54,8 +54,8 @@ test('getInitNasConfigAsFc imported vpc configuration', async () => {
     region,
     rule: 'test-srm-client',
     vpcConfig: {
-      vpcId: 'vpc-2vcpxnhi0y2mvr236yoha',
-      vSwitchIds: ['vsw-2vci27eoli6io5lcyjtj3'],
+      vpcId: 'vpc-2vc2wgz6nf18xt4wrdaoj',
+      vSwitchIds: ['vsw-2vcdstwy578yzbo8o3dc6'],
     }
   });
   console.log('res: ', res);
