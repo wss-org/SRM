@@ -2,7 +2,7 @@ import Pop, { Config } from "@alicloud/pop-core";
 import _ from "lodash";
 import { tracker } from '@serverless-cd/srm-aliyun-common';
 import { requestOption, sleep } from "../utils";
-import { IGetNasZonesAsVSwitchesResponse, IMakeNas } from "./type";
+import { IFindNasResponse, IGetNasZonesAsVSwitchesResponse, IMakeNas } from "./type";
 
 export * from './type';
 
@@ -69,7 +69,7 @@ export default class Vpc extends Pop {
   /**
    * 根据 vpcId 和 description 查找 nas 配置
    */
-  async findNas(vpcId: string, description: string): Promise<{ fileSystemId: string, mountTargetDomain: string } | any[]> {
+  async findNas(vpcId: string, description: string): Promise<IFindNasResponse | any[]> {
     // 查找文件系统中使用 vpcConfig 的有效挂载点
     const expectedFileSystems = await this.describeFileSystems(description);
 
@@ -246,10 +246,10 @@ export default class Vpc extends Pop {
   /**
    * 根据交换机详情获取可创建用区
    */
-  async getNasZonesAsVSwitches(vswitches: { vswitchId: string; zoneId: string }[]): Promise<IGetNasZonesAsVSwitchesResponse> {
+  async getNasZonesAsVSwitches(vSwitches: { vswitchId: string; zoneId: string }[]): Promise<IGetNasZonesAsVSwitchesResponse | void> {
     const zones = await this.describeZones();
     const capacityZoneConfig = {};
-    for (const { vswitchId, zoneId } of vswitches) {
+    for (const { vswitchId, zoneId } of vSwitches) {
       const zone = _.find(zones, (item) => item.ZoneId === zoneId);
       const capacity = _.get(zone, 'Capacity.Protocol', []);
       const performance = _.get(zone, 'Performance.Protocol', []);
@@ -271,7 +271,7 @@ export default class Vpc extends Pop {
     if (!_.isEmpty(capacityZoneConfig)) {
       return capacityZoneConfig as IGetNasZonesAsVSwitchesResponse;
     }
-    throw new Error('Not zone as vswitch configuration');
+    this.logger.debug('Not zone as vswitch configuration');
   }
 
   /**

@@ -14,6 +14,7 @@ import {
   ICreateVSwitchResponse,
   IGetInitVpcConfigAsFcResponse,
   IDescribeVSwitchAttributes,
+  IDescribeVpcAttribute,
 } from "./type";
 
 export * from "./type";
@@ -23,6 +24,7 @@ export default class Vpc extends Pop {
   logger: any;
   default_vpc_cidr_block = "10.0.0.0/8";
   default_vsw_cidr_block = "10.20.0.0/16";
+  vsw_cidr_block_index = 1;
 
   constructor(config: Config, logger: any = config) {
     super({
@@ -32,6 +34,26 @@ export default class Vpc extends Pop {
     });
     this.config = config;
     this.logger = logger;
+  }
+
+  async setDefaultCiDrBlock(params: IDescribeVpcAttribute) {
+    const { CidrBlock: cidrBlock } = await this.describeVpcAttribute(params);
+    this.logger.debug(`get default CIDR block: ${cidrBlock}`);
+    this.default_vpc_cidr_block = cidrBlock;
+    const [ip, network] = _.split(cidrBlock, '/');
+    let vswNetwork = _.add(Number(network), 4);
+    if (vswNetwork <= 16) {
+      vswNetwork = 16;
+      this.vsw_cidr_block_index = 1;
+    } else if (vswNetwork < 24) {
+      this.vsw_cidr_block_index = 2;
+    } else {
+      if (vswNetwork < 29) {
+        vswNetwork = 29;
+      }
+      this.vsw_cidr_block_index = 3;
+    }
+    this.default_vsw_cidr_block = `${ip}/${vswNetwork}`;
   }
 
   /**
@@ -111,6 +133,18 @@ export default class Vpc extends Pop {
   }
 
   /**
+   * 获取 Vpc 信息
+   */
+  async describeVpcAttribute(params: IDescribeVpcAttribute): Promise<Record<string, any>> {
+    const { region, vpcId } = params;
+    return await this.request(
+      "DescribeVpcAttribute",
+      { VpcId: vpcId, RegionId: region },
+      requestOption,
+    );
+  }
+
+  /**
    * 获取 vswitch 列表
    */
   async describeVSwitches(
@@ -176,7 +210,7 @@ export default class Vpc extends Pop {
         // 如果错误是 ip 冲突，则重拾
         if (ex.code === "InvalidCidrBlock.Overlapped") {
           const ips = cidrBlock.split(".");
-          _.set(ips, "[1]", (ips[1] as unknown as number) / 1 + 1);
+          _.set(ips, `[this.vsw_cidr_block_index]`, (ips[this.vsw_cidr_block_index] as unknown as number) / 1 + 1);
           cidrBlock = ips.join(".");
         }
 
@@ -234,6 +268,35 @@ export default class Vpc extends Pop {
     };
   }
 
+  /**
+   * 根据可用区列表获取可用的交换机ID和交换机可用区
+   * @param zoneIds 可用区列表
+   * @param vSwitches 已存在的交换机列表
+   * @param createParams 创建交换机的参数
+   * @returns
+   */
+  async mackZoneIdsVswitch(
+    zoneIds: string[],
+    vSwitches: any[],
+    createParams: ICreateVSwitch
+  ): Promise<{ vswitchId: string; zoneId: string }> {
+    const findVSwitches = _.find(vSwitches, (vswitch) =>
+      _.includes(zoneIds, vswitch.ZoneId)
+    );
+    let vswitchId: string;
+    let zoneId: string;
+    if (!_.isEmpty(findVSwitches)) {
+      vswitchId = findVSwitches.VSwitchId;
+      zoneId = findVSwitches.ZoneId;
+    } else {
+      createParams.zoneId = zoneIds[0];
+      zoneId = zoneIds[0];
+      vswitchId = await this.createVSwitch(createParams);
+    }
+    return { vswitchId, zoneId };
+  }
+
+
   private async mackVpc(params: { region: string; rule: string }) {
     const { region, rule } = params;
     let vpcId = "";
@@ -289,34 +352,6 @@ export default class Vpc extends Pop {
       await this.mackZoneIdsVswitch(nasZoneIds, vSwitches, createParams);
 
     return { fcVswitch, nasVswitch, nasZone };
-  }
-
-  /**
-   * 根据可用区列表获取可用的交换机ID和交换机可用区
-   * @param zoneIds 可用区列表
-   * @param vSwitches 已存在的交换机列表
-   * @param createParams 创建交换机的参数
-   * @returns
-   */
-  async mackZoneIdsVswitch(
-    zoneIds: string[],
-    vSwitches: any[],
-    createParams: ICreateVSwitch
-  ): Promise<{ vswitchId: string; zoneId: string }> {
-    const findVSwitches = _.find(vSwitches, (vswitch) =>
-      _.includes(zoneIds, vswitch.ZoneId)
-    );
-    let vswitchId: string;
-    let zoneId: string;
-    if (!_.isEmpty(findVSwitches)) {
-      vswitchId = findVSwitches.VSwitchId;
-      zoneId = findVSwitches.ZoneId;
-    } else {
-      createParams.zoneId = zoneIds[0];
-      zoneId = zoneIds[0];
-      vswitchId = await this.createVSwitch(createParams);
-    }
-    return { vswitchId, zoneId };
   }
 
   private async mackSecurityGroup(params: {

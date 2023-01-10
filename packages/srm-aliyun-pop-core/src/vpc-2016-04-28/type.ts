@@ -22,6 +22,11 @@ export interface IDescribeVpcs {
   vpcId?: string;
 }
 
+export interface IDescribeVpcAttribute {
+  region: string;
+  vpcId: string;
+}
+
 export interface IDescribeVpcsResponse {
   total: Number;
   list: Record<string, any>[];

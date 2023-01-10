@@ -34,3 +34,5 @@ export interface IMakeNas {
   vpcId: string;
 }
 
+export interface IFindNasResponse { fileSystemId: string, mountTargetDomain: string }
+
