@@ -1,6 +1,6 @@
 const FC = require("@alicloud/fc2");
 
-export interface IConfg {
+interface IConfig {
   accessKeyID: string;
   accessKeySecret: string;
   securityToken?: string;
@@ -12,8 +12,8 @@ export interface IConfg {
   headers?: Record<string, string>;
 }
 
-export default class FcClient extends FC {
-  constructor(accountid: string, config: IConfg) {
-    super(accountid, config);
+export = class FcClient extends FC {
+  constructor(accountId: string, config: IConfig) {
+    super(accountId, config);
   }
 }
