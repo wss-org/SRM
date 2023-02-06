@@ -1,20 +1,19 @@
-import { sleep, update } from "./decorator";
-import FC from "@alicloud/fc2";
+const FC = require("@alicloud/fc2");
 
-export class FcClient extends FC {
-  accountid;
-  config = {};
-  constructor(accountid, config) {
+export interface IConfg {
+  accessKeyID: string;
+  accessKeySecret: string;
+  securityToken?: string;
+  region: string;
+  secure?: boolean;
+  internal?: boolean;
+  endpoint?: string;
+  timeout?: number;
+  headers?: Record<string, string>;
+}
+
+export default class FcClient extends FC {
+  constructor(accountid: string, config: IConfg) {
     super(accountid, config);
-    this.accountid = accountid;
-    this.config = config;
-  }
-  @update({
-    // 强制更新
-    condition: () => true,
-  })
-  async createService(serviceName, options = {}) {
-    await sleep(100);
-    console.log("createService");
   }
 }

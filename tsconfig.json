@@ -1,11 +1,20 @@
 {
-  "extends": "./tsconfig.build.json",
-
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@serverless-cd/*": ["packages/*/src"]
-    },
-    "noEmit": true
-  }
+    "esModuleInterop": true,
+    "module": "commonjs",
+    "strict": true,
+    "declaration": true,
+    "target": "es6",
+    "sourceMap": true,
+    "declarationMap": true,
+    "noEmitOnError": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "resolveJsonModule": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__mocks__/*"
+  ]
 }
