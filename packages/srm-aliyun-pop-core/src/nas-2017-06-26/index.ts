@@ -1,14 +1,14 @@
-import Pop, { Config } from "@alicloud/pop-core";
+import Pop from "@alicloud/pop-core";
 import _ from "lodash";
 import { tracker } from '@serverless-cd/srm-aliyun-common';
 import { requestOption, sleep } from "../utils";
-import { IFindNasResponse, IGetNasZonesAsVSwitchesResponse, IMakeNas } from "./type";
+import { IFindNasResponse, IGetNasZonesAsVSwitchesResponse, IMakeNas, Config } from "./type";
 
 export * from './type';
 
 const createMountCheckRetry = _.parseInt(process.env.CHECK_NAS_STATUS_RETRY || '40');
 
-export default class Vpc extends Pop {
+export default class Nas extends Pop {
   region: string;
   logger: any;
 
@@ -71,7 +71,7 @@ export default class Vpc extends Pop {
    */
   async findNas(vpcId: string, description: string): Promise<IFindNasResponse | any[]> {
     // 查找文件系统中使用 vpcConfig 的有效挂载点
-    const expectedFileSystems = await this.describeFileSystems(description);
+    const expectedFileSystems = await this.describeFileSystemsByDescription(description);
 
     // 如果查到则返回 fileSystemId 和 mountTargetDomain
     // 如果没有找到则返回第一个元素的 fileSystemId
@@ -172,9 +172,9 @@ export default class Vpc extends Pop {
   }
 
   /**
-   * 获取文件系统详情
+   * 根据文件描述获取，获取文件系统详情
    */
-  async describeFileSystems(description: string): Promise<any[]> {
+  async describeFileSystemsByDescription(description: string): Promise<any[]> {
     const pageSize = 100;
     const expectedFileSystems = [];
     const needFilterDescription = !_.isEmpty(description);
@@ -212,6 +212,35 @@ export default class Vpc extends Pop {
 
     this.logger.debug(`find filesystem: ${JSON.stringify(expectedFileSystems)}`);
     return expectedFileSystems;
+  }
+
+  async describeFileSystems(params: Record<string, any> = {}): Promise<any> {
+    const pageSize = 100;
+    const fileSystems: any[] = [];
+    let requestPageNumber = 0;
+    let totalCount: number;
+    let pageNumber: number;
+
+    do {
+      const p = {
+        ...params,
+        RegionId: this.region,
+        PageSize: pageSize,
+        PageNumber: ++requestPageNumber,
+      };
+
+      this.logger.debug(`DescribeFileSystems request pageNumber: ${requestPageNumber}`);
+      const rs: any = await this.request('DescribeFileSystems', p, requestOption);
+
+      totalCount = rs.TotalCount;
+      if (totalCount === 0) {
+        return { totalCount, fileSystems };
+      }
+      pageNumber = rs.PageNumber;
+      fileSystems.push(..._.get(rs, 'FileSystems.FileSystem', []));
+    } while (pageNumber * pageSize < totalCount);
+
+    return { totalCount, fileSystems };
   }
 
   /**

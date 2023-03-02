@@ -1,6 +1,7 @@
 import Pop, { ROAClient } from '../src';
 import _ from 'lodash';
 import PopClient from '@alicloud/pop-core';
+import NasClient from '../src/nas-2017-06-26';
 
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
@@ -48,9 +49,9 @@ test('getInitNasConfigAsFc imported vpc configuration', async () => {
     endpoint: `http://nas.${region}.aliyuncs.com`,
     apiVersion: '2017-06-26',
   }
-  const codeupClient = new Pop(config);
-  expect(codeupClient instanceof PopClient).toBeTruthy();
-  const res = await codeupClient.getInitNasConfigAsFc({
+  const client = new Pop(config);
+  expect(client instanceof PopClient).toBeTruthy();
+  const res = await client.getInitNasConfigAsFc({
     region,
     rule: 'test-srm-client',
     vpcConfig: {
@@ -61,3 +62,17 @@ test('getInitNasConfigAsFc imported vpc configuration', async () => {
   console.log('res: ', res);
   expect(true).toBeTruthy();
 });
+
+test.only('nas client and describeFileSystems', async () => {
+  const region = 'cn-shanghai';
+  const config = {
+    accessKeyId: process.env.ACCESS_KEY_ID || '',
+    accessKeySecret: process.env.ACCESS_KEY_SECRET || '',
+  };
+
+  const client = new NasClient(region, config);
+  expect(client instanceof PopClient).toBeTruthy();
+  await client.describeFileSystems({
+    VpcId: 'vpc-uf638ir76pc2cevmfg246'
+  });
+})

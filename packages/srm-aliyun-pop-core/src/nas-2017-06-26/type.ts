@@ -1,3 +1,7 @@
+import { Config as CoreConfig } from "@alicloud/pop-core";
+
+export type Config = Omit<CoreConfig, 'endpoint' | 'apiVersion'>;
+
 export interface IGetInitNasConfigAsFcOptions {
   region: string;
   rule: string;
